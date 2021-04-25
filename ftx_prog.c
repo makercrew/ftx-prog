@@ -1,6 +1,9 @@
 /*
  * This is a Linux command-line alternative to the FTDI MProg/FTProg
  * utilities for FTDI's FT-X series.
+ * 
+ * Modified to add support for Battery Charge Detect feature by Kevin
+ * Sidwar. April 2021. Bumped version to 0.4.
  *
  * Modified for the FT-X series by Richard Meadows 2012.
  *
@@ -32,7 +35,7 @@
 #include <ftdi.h>
 #include <stdbool.h>
 
-#define MYVERSION	"0.3"
+#define MYVERSION	"0.4"
 
 #define CBUS_COUNT	7
 
@@ -144,7 +147,8 @@ enum arg_type {
   arg_ignore_crc_error,
   arg_erase_eeprom,
   arg_dbus_config,
-  arg_cbus_config
+  arg_cbus_config,
+  arg_bcd_enable,
 };
 
 struct args_required_t
@@ -187,6 +191,7 @@ const struct args_required_t req_info[] =
   {arg_ignore_crc_error, 0},
   {arg_erase_eeprom, 0},
   {arg_cbus_config,1},
+  {arg_bcd_enable, 1},
 };
 
 
@@ -226,6 +231,7 @@ static const char* arg_type_strings[] = {
   "--erase-eeprom",
   "--dbus-config",
   "--cbus-config",
+  "--bcd",
   NULL
 };
 static const char* rs232_strings[] = {
@@ -319,7 +325,7 @@ static const char *arg_type_help[] = {
   "   				    # Erase the EEPROM and exit",
   "dbus_cfg",
   "cbus_cfg",
-
+  "			 [on|off]   # (controls if Battery Charge Detect is enabled)",
 };
 
 static const char *bool_strings[] = {
@@ -909,7 +915,7 @@ static void show_help (FILE *fp)
 
     if (val) { /* If there is a help string */
       if (strcmp(val, "[cbus]") == 0) {
-        fprintf(fp, "  [1..%d]", CBUS_COUNT);
+        fprintf(fp, "  [0..%d]", CBUS_COUNT - 1);
         print_options(fp, cbus_mode_strings);
       } else if (strcmp(val, "[invert]") == 0) {
         print_options(fp, rs232_strings);
@@ -1156,6 +1162,9 @@ static int process_args (int argc, char *argv[], struct eeprom_fields *ee)
       break;
     case arg_new_pid:
       ee->usb_pid = unsigned_val(argv[i++], 0xffff);
+      break;
+    case arg_bcd_enable:
+      ee->bcd_enable = match_arg(argv[i++], bool_strings) & 1;
       break;
     }
   }
