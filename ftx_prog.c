@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <ftdi.h>
 #include <stdbool.h>
+#include <usb.h>
 
 #define MYVERSION	"0.4"
 
@@ -430,6 +431,7 @@ static void do_deinit (void)
 
 static void do_close (void)
 {
+  usb_reset(ftdi.usb_dev);
   ftdi_usb_close(&ftdi);
 }
 
